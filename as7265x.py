@@ -292,7 +292,7 @@ class AS7265X():
 
     #Given 4 bytes returns the floating point value
     def convertBytesToFloat(self, value):
-        b = struct.pack('L', value)
+        b = struct.pack('=L', value)
         f = struct.unpack('f', b)
         return f[0]
 
