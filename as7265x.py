@@ -355,17 +355,17 @@ class AS7265X():
         self.virtualWriteRegister(DEV_SELECT_CONTROL, device)
 
     def enableIndicator(self):
+        self.selectDevice(NIR)
+
         value = self.virtualReadRegister(LED_CONFIG)
         value |= 0b00000001
-
-        self.selectDevice(NIR)
         self.virtualWriteRegister(LED_CONFIG, value)
 
     def disableIndicator(self):
+        self.selectDevice(NIR)
+
         value = self.virtualReadRegister(LED_CONFIG)
         value &= 0b11111110
-
-        self.selectDevice(NIR)
         self.virtualWriteRegister(LED_CONFIG, value)
 
     def setIndicatorCurrent(self, current):
@@ -393,6 +393,9 @@ class AS7265X():
         self.virtualWriteRegister(CONFIG, value)
 
     def virtualReadRegister(self, virtualAddr):
+        timeout = 5  # seconds
+        start_time = time.time()
+
         status = self.readRegister(STATUS_REG)
         if (status & RX_VALID) != 0:
             incoming = self.readRegister(READ_REG)
@@ -402,6 +405,8 @@ class AS7265X():
             if (status & TX_VALID) == 0:
                 break
             time.sleep(POLLING_DELAY)
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Function call took too long")
 
         self.writeRegister(WRITE_REG, virtualAddr)
 
@@ -410,16 +415,23 @@ class AS7265X():
             if (status & RX_VALID) != 0:
                 break
             time.sleep(POLLING_DELAY)
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Function call took too long")
 
         incoming = self.readRegister(READ_REG)
         return incoming
 
     def virtualWriteRegister(self, virtualAddr, dataToWrite):
+        timeout = 5  # seconds
+        start_time = time.time()
+
         while(1):
             status = self.readRegister(STATUS_REG)
             if (status & TX_VALID) == 0:
                 break
             time.sleep(POLLING_DELAY)
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Function call took too long")
 
         self.writeRegister(WRITE_REG, virtualAddr | 0x80)
 
@@ -428,6 +440,8 @@ class AS7265X():
             if (status & TX_VALID) == 0:
                 break
             time.sleep(POLLING_DELAY)
+            if time.time() - start_time > timeout:
+                raise TimeoutError("Function call took too long")
 
         self.writeRegister(WRITE_REG, dataToWrite)
 
